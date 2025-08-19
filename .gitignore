@@ -1,0 +1,15 @@
+# Shopify CLI & Environment
+.shopify/
+.env*
+
+# Node.js
+node_modules/
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
