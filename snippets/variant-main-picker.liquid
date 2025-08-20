@@ -57,7 +57,8 @@
       {% if block_settings.use_metafield_colors and related_products_count > 0 %}
         <fieldset class="variant-option variant-option--buttons{% if block_settings.show_swatches %} variant-option--swatches{% endif %}">
           <legend>{{ 'products.product.colors' | t }}</legend>
-          {% for related_product in related_products %}
+          {%- assign sorted_related_products = related_products | sort: 'title' -%}
+          {% for related_product in sorted_related_products %}
             {% liquid
               assign is_current_product = false
               if related_product.id == product_resource.id
@@ -68,40 +69,21 @@
             {% if block_settings.show_swatches %}
               {% comment %} Extract color from Shopify native color metaobject {% endcomment %}
               {%- assign product_color = related_product.metafields.custom.swatch_color.value.color -%}
-
-              {% if is_current_product %}
-                <span class="variant-option__button-label variant-option__button-label--has-swatch variant-option__button-label--current" title="{{ related_product.title }}">
-                  {% if product_color != blank %}
-                    <span class="swatch swatch--unscaled" style="--swatch-background: {{ product_color }};">
-                    </span>
-                  {% else %}
-                    <span class="variant-option__button-label variant-option__button-label--current">
-                      <span class="variant-option__button-label__text">{{ related_product.title }}</span>
-                    </span>
-                  {% endif %}
-                </span>
-              {% else %}
-                <a href="{{ related_product.url }}" class="variant-option__button-label variant-option__button-label--has-swatch" title="{{ related_product.title }}">
-                  {% if product_color != blank %}
-                    <span class="swatch swatch--unscaled" style="--swatch-background: {{ product_color }};">
-                    </span>
-                  {% else %}
-                    <span class="variant-option__button-label">
-                      <span class="variant-option__button-label__text">{{ related_product.title }}</span>
-                    </span>
-                  {% endif %}
-                </a>
-              {% endif %}
+              <a href="{{ related_product.url }}" class="variant-option__button-label variant-option__button-label--has-swatch {% if is_current_product %} variant-option__button-label--current {% endif %}" title="{{ related_product.title }}">
+                {% if product_color != blank %}
+                  <span class="swatch swatch--unscaled" style="--swatch-background: {{ product_color }};">
+                  </span>
+                {% else %}
+                  <span class="variant-option__button-label {% if is_current_product %} variant-option__button-label--current {% endif %}">
+                    <span class="variant-option__button-label__text">{{ related_product.title }}</span>
+                  </span>
+                {% endif %}
+              </a>
             {% else %}
-              {% if is_current_product %}
-                <span class="variant-option__button-label variant-option__button-label--current no-swatch">
-                  <span class="variant-option__button-label__text">{{ related_product.title }}</span>
-                </span>
-              {% else %}
-                <a href="{{ related_product.url }}" class="variant-option__button-label">
-                  <span class="variant-option__button-label__text">{{ related_product.title }}</span>
-                </a>
-              {% endif %}
+              {% comment %} If swatches are not enabled, show the title {% endcomment %}
+              <a href="{{ related_product.url }}" class="variant-option__button-label {% if is_current_product %} variant-option__button-label--current {% endif %}">
+                <span class="variant-option__button-label__text">{{ related_product.title }}</span>
+              </a>
             {% endif %}
           {% endfor %}
         </fieldset>
