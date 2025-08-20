@@ -8,6 +8,7 @@
 
   @param {object} product_resource - The product object.
   @param {object} [block] - The block object
+  @param {object} [section] - The section object
 {%- enddoc -%}
 
 {% assign block_settings = block.settings %}
@@ -69,7 +70,7 @@
             {% if block_settings.show_swatches %}
               {% comment %} Extract color from Shopify native color metaobject {% endcomment %}
               {%- assign product_color = related_product.metafields.custom.swatch_color.value.color -%}
-              <a href="{{ related_product.url }}" class="variant-option__button-label variant-option__button-label--has-swatch {% if is_current_product %} variant-option__button-label--current {% endif %}" title="{{ related_product.title }}">
+              <a href="{{ related_product.url }}" class="variant-option__button-label variant-option__button-label--has-swatch {% if is_current_product %} variant-option__button-label--current {% endif %}" title="{{ related_product.title }}"{% if block_settings.enable_section_rendering %} data-related-product-url="{{ related_product.url }}" {% endif %}>
                 {% if product_color != blank %}
                   <span class="swatch swatch--unscaled" style="--swatch-background: {{ product_color }};">
                   </span>
@@ -81,7 +82,7 @@
               </a>
             {% else %}
               {% comment %} If swatches are not enabled, show the title {% endcomment %}
-              <a href="{{ related_product.url }}" class="variant-option__button-label {% if is_current_product %} variant-option__button-label--current {% endif %}">
+              <a href="{{ related_product.url }}" class="variant-option__button-label {% if is_current_product %} variant-option__button-label--current no-swatch {% endif %}"{% if block_settings.enable_section_rendering %} data-related-product-url="{{ related_product.url }}" {% endif %}>
                 <span class="variant-option__button-label__text">{{ related_product.title }}</span>
               </a>
             {% endif %}
@@ -590,3 +591,22 @@
     background-color: var(--color-selected-variant-background);
   }
 {% endstylesheet %}
+
+{% comment %}
+  Handles related product color swatch links:
+  - Enables AJAX section updates with enable_section_rendering setting if enabled
+  - Falls back to normal navigation if not enabled
+{% endcomment %}
+{% if block_settings.enable_section_rendering %}
+    <script src="{{ 'color-section-renderer.js' | asset_url }}" defer></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.ColorSectionRenderer) {
+          new ColorSectionRenderer({
+            sectionId: '{{ section.id }}',
+            selector: '[data-related-product-url]'
+          });
+        }
+      });
+    </script>
+{% endif %}
