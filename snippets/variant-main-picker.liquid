@@ -56,7 +56,7 @@
       {% comment %} Color picker from related products metafield {% endcomment %}
       {% if block_settings.use_metafield_colors and related_products_count > 0 %}
         <fieldset class="variant-option variant-option--buttons">
-          <legend>Colors</legend>
+          <legend>{{ 'products.product.colors' | t }}</legend>
           {% for related_product in related_products %}
             {% liquid
               assign is_current_product = false
