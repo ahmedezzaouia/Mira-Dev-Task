@@ -1,11 +1,39 @@
 {%- doc -%}
   Renders a default variant picker, used to display the variant picker in the variants block.
+  
+  New Features:
+  - Related products color picker via block_settings.use_metafield_colors
+  - Fetches related products from custom.related_products metafield
+  - Shows color swatches using Shopify native color metaobject for each related product
+
+  Metafield approaches:
+  - Individual products: uses related_products metafield (single product references: recommended for small stores)
+  - Collection approach: uses color_products_collection metafield (product collection: recommended for large stores)
 
   @param {object} product_resource - The product object.
   @param {object} [block] - The block object
+  @param {object} [section] - The section object
 {%- enddoc -%}
 
 {% assign block_settings = block.settings %}
+
+{% liquid
+  # Get related products from metafield if enabled
+  # Use the metafield_approach setting to choose between Collection or Product approach
+  assign related_products = blank
+  if block_settings.metafield_approach == 'collection'
+    assign related_products = product_resource.metafields.custom.color_products_collection.value.products
+  else
+    assign related_products = product_resource.metafields.custom.related_products.value
+  endif
+%}
+
+{% comment %} Can't use .size or | size on metafield arrays, so we count manually. {% endcomment %}
+{% assign related_products_count = 0 %}
+{% for related_product in related_products %}
+  {% assign related_products_count = related_products_count | plus: 1 %}
+{% endfor %}
+
 
 {% unless product_resource.has_only_default_variant %}
   {% liquid
@@ -33,7 +61,49 @@
     {% endif %}
   >
     <form class="variant-picker__form">
+      {% comment %} Color picker from related products metafield {% endcomment %}
+      {% if block_settings.use_metafield_colors and related_products_count > 0 %}
+        <fieldset class="variant-option variant-option--buttons{% if block_settings.show_swatches %} variant-option--swatches{% endif %}">
+          <legend>{{ 'products.product.colors' | t }}</legend>
+          {%- assign sorted_related_products = related_products | sort: 'title' -%}
+          {% for related_product in sorted_related_products %}
+            {% liquid
+              assign is_current_product = false
+              if related_product.id == product_resource.id
+                assign is_current_product = true
+              endif
+            %}
+            
+            {% if block_settings.show_swatches %}
+              {% comment %} Extract color from Shopify native color metaobject {% endcomment %}
+              {%- assign product_color = related_product.metafields.custom.swatch_color.value.color -%}
+              <a href="{{ related_product.url }}" class="variant-option__button-label variant-option__button-label--has-swatch {% if is_current_product %} variant-option__button-label--current {% endif %}" title="{{ related_product.title }}"{% if block_settings.enable_section_rendering %} data-related-product-url="{{ related_product.url }}" {% endif %}>
+                {% if product_color != blank %}
+                  <span class="swatch swatch--unscaled" style="--swatch-background: {{ product_color }};">
+                  </span>
+                {% else %}
+                  <span class="variant-option__button-label {% if is_current_product %} variant-option__button-label--current {% endif %}">
+                    <span class="variant-option__button-label__text">{{ related_product.title }}</span>
+                  </span>
+                {% endif %}
+              </a>
+            {% else %}
+              {% comment %} If swatches are not enabled, show the title {% endcomment %}
+              <a href="{{ related_product.url }}" class="variant-option__button-label {% if is_current_product %} variant-option__button-label--current no-swatch {% endif %}"{% if block_settings.enable_section_rendering %} data-related-product-url="{{ related_product.url }}" {% endif %}>
+                <span class="variant-option__button-label__text">{{ related_product.title }}</span>
+              </a>
+            {% endif %}
+          {% endfor %}
+        </fieldset>
+      {% endif %}
+
       {%- for product_option in product_resource.options_with_values -%}
+        {%- comment %} Skip color options if using metafield colors {% endcomment -%}
+        {%- assign color_option_name = 'products.product.colors' | t -%}
+        {%- if block_settings.use_metafield_colors and related_products_count > 0 and product_option.name == color_option_name -%}
+          {%- continue -%}
+        {%- endif -%}
+        
         {%- liquid
           assign swatch_count = product_option.values | map: 'swatch' | compact | size
           assign variant_style = block_settings.variant_style
@@ -59,7 +129,7 @@
             {{ option_id_attribute }}
           >
             <legend>
-              {{ product_option.name | escape -}}
+              {{ product_option.name | escape }}
               {%- if variant_style == 'swatch' -%}
                 <span class="variant-option__swatch-value">{{ product_option.selected_value }}</span>
               {%- endif %}
@@ -232,6 +302,7 @@
   .variant-option--buttons {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--gap-sm);
     margin: 0;
     padding: 0;
@@ -505,4 +576,44 @@
     text-align: right;
     justify-content: right;
   }
+
+  /* Related products color swatches styles */
+  .variant-option--swatches .variant-option__button-label--current {
+    --focus-outline: var(--focus-outline-width) solid var(--color-foreground);
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-offset);
+    background-color: transparent;
+    border-color: var(--color-foreground);
+  }
+
+  .variant-option--swatches .variant-option__button-label--current:hover {
+    background-color: transparent;
+    border-color: var(--color-foreground);
+    color: var(--color-foreground);
+  }
+
+  .variant-option__button-label--current.no-swatch {
+    border-color: var(--color-selected-variant-border);
+    color: var(--color-selected-variant-text);
+    background-color: var(--color-selected-variant-background);
+  }
 {% endstylesheet %}
+
+{% comment %}
+  Handles related product color swatch links:
+  - Enables AJAX section updates with enable_section_rendering setting if enabled
+  - Falls back to normal navigation if not enabled
+{% endcomment %}
+{% if block_settings.enable_section_rendering %}
+    <script src="{{ 'color-section-renderer.js' | asset_url }}" defer></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.ColorSectionRenderer) {
+          new ColorSectionRenderer({
+            sectionId: '{{ section.id }}',
+            selector: '[data-related-product-url]'
+          });
+        }
+      });
+    </script>
+{% endif %}

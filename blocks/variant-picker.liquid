@@ -23,6 +23,30 @@
       "content": "t:content.edit_variants_in_theme_settings"
     },
     {
+      "type": "checkbox",
+      "id": "use_metafield_colors",
+      "label": "Use metafield for colors",
+      "default": false,
+      "info": "Bypass the 100 variants limit by using separate products for colors. Fill the 'Related Products' metafield for each product and add the exact product color in the category color field. [Learn more](https://github.com/ahmedezzaouia/Mira-Dev-Task/blob/main/README.md)"
+    },
+    {
+      "type": "select",
+      "id": "metafield_approach",
+      "label": "Color organization approach",
+      "options": [
+        {
+          "value": "product",
+          "label": "Product list approach"
+        },
+        {
+          "value": "collection",
+          "label": "Collection-based approach (Recommended)"
+        }
+      ],
+      "default": "collection",
+      "info": "Collection-based: Automatic grouping via collections (recommended for many products). Product list: Manual linking via metafields (precise control)."
+    },
+    {
       "type": "select",
       "id": "variant_style",
       "label": "t:settings.style",
@@ -43,6 +67,13 @@
       "id": "show_swatches",
       "label": "t:settings.swatches",
       "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_section_rendering",
+      "label": "Enable smooth product updates",
+      "default": false,
+      "info": "Update product information without page reload when clicking color options"
     },
     {
       "type": "text_alignment",
