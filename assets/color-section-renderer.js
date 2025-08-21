@@ -49,7 +49,12 @@ class ColorSectionRenderer {
                 document.querySelectorAll('.variant-option__button-label--current').forEach(el => 
                   el.classList.remove('variant-option__button-label--current')
                 );
-                link.classList.add('variant-option__button-label--current');
+                
+                // Find the corresponding link in the new section
+                const newLink = newSection.querySelector(`[data-related-product-url="${productUrl}"]`);
+                if (newLink) {
+                  newLink.classList.add('variant-option__button-label--current');
+                }
                 
                 // Update URL
                 history.pushState({}, '', productUrl);

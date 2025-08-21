@@ -6,6 +6,10 @@
   - Fetches related products from custom.related_products metafield
   - Shows color swatches using Shopify native color metaobject for each related product
 
+  Metafield approaches:
+  - Individual products: uses related_products metafield (single product references: recommended for small stores)
+  - Collection approach: uses color_products_collection metafield (product collection: recommended for large stores)
+
   @param {object} product_resource - The product object.
   @param {object} [block] - The block object
   @param {object} [section] - The section object
@@ -15,8 +19,11 @@
 
 {% liquid
   # Get related products from metafield if enabled
+  # Use the metafield_approach setting to choose between Collection or Product approach
   assign related_products = blank
-  if block_settings.use_metafield_colors and product_resource.metafields.custom.related_products
+  if block_settings.metafield_approach == 'collection'
+    assign related_products = product_resource.metafields.custom.color_products_collection.value.products
+  else
     assign related_products = product_resource.metafields.custom.related_products.value
   endif
 %}
